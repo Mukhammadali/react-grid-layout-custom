@@ -87,7 +87,7 @@ class ShowcaseLayout extends React.Component {
     rowHeight: 30,
     onLayoutChange: function() {},
     cols: { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 },
-    initialLayout: generateLayout()
+    initialLayout: []
   };
 
   state = {
@@ -106,9 +106,6 @@ class ShowcaseLayout extends React.Component {
     return _.map(this.state.layouts[this.state.currentBreakpoint], l => {
       return (
         <div key={l.i} className={l.static ? "static" : ""}>
-          <div className="hide-button" onClick={this.onPutItem.bind(this, l)}>
-            &times;
-          </div>
           {l.static ? (
             <span
               className="text"
@@ -149,14 +146,10 @@ class ShowcaseLayout extends React.Component {
   };
 
   onTakeItem = item => {
-    console.log("taking item...");
-    initialToolbox.i = uuid.v1();
+    initialToolbox.i = uuid.v4();
     this.setState(prevState => ({
       toolbox: {
         lg: [initialToolbox]
-        // [prevState.currentBreakpoint]: prevState.toolbox[
-        //   prevState.currentBreakpoint
-        // ].filter(({ i }) => i !== item.i)
       },
       layouts: {
         ...prevState.layouts,
@@ -170,23 +163,9 @@ class ShowcaseLayout extends React.Component {
     }));
   };
 
-  onPutItem = item => {
-    console.log("Putting item", item);
-    this.setState(prevState => {
-      return {
-        layouts: {
-          ...prevState.layouts,
-          [prevState.currentBreakpoint]: prevState.layouts[
-            prevState.currentBreakpoint
-          ].filter(({ i }) => i !== item.i)
-        }
-      };
-    });
-  };
 
   onLayoutChange = (layout, layouts) => {
     this.props.onLayoutChange(layout, layouts);
-    console.log("layout changed");
     this.setState({ layouts });
   };
 
@@ -211,12 +190,10 @@ class ShowcaseLayout extends React.Component {
 
   onDragInItem(e: Event, data: DraggableData, item) {
     item.continueDrag = e;
-    console.log("dragin item");
     this.onTakeItem(item);
   }
 
   render() {
-    console.log("test", this.state.toolbox);
     return (
       <div className="container">
         <ToolBox

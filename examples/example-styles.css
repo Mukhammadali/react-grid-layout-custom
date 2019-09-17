@@ -8,6 +8,7 @@ body {
 }
 .react-grid-layout {
   background: #eee;
+  min-height: 80vh;
 }
 .layoutJSON {
   background: #ddd;
@@ -89,8 +90,9 @@ li b {
   text-align: center;
   line-height: 40px;
   cursor: pointer;
-  width: 100px;
-  /* height: 40px; */
+  max-width: 120px;
+  min-height: 60px;
+  min-width: 60px;
   word-wrap: break-word;
   padding: 10px;
   margin: 5px;
