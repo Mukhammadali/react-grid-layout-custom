@@ -99,3 +99,10 @@ li b {
 .toolbox__items__item.react-draggable-dragging {
   position: absolute;
 }
+.droppable-element {
+  width: 150px;
+  background: #ddd;
+  border: 1px solid black;
+  margin-top: 10px;
+  padding: 10px;
+}
