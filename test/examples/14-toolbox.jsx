@@ -1,4 +1,5 @@
 import React from "react";
+import uuid from "uuid";
 import _ from "lodash";
 import { Responsive, WidthProvider } from "react-grid-layout";
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
@@ -35,7 +36,7 @@ class ToolBoxItem extends React.Component {
       <Draggable
         onDrag={this.handleDrag.bind(this)}
         position={{ x: 0, y: 0 }}
-        bounds="body"
+        bounds="div.container"
       >
         <div
           className="toolbox__items__item"
@@ -68,6 +69,18 @@ class ToolBox extends React.Component {
   }
 }
 
+const initialToolbox = {
+  w: 2,
+  h: 4,
+  x: 2,
+  y: 0,
+  i: "placeholder",
+  moved: false,
+  static: false,
+  isDraggable: undefined,
+  isResizable: undefined
+};
+
 class ShowcaseLayout extends React.Component {
   static defaultProps = {
     className: "layout",
@@ -82,7 +95,7 @@ class ShowcaseLayout extends React.Component {
     compactType: "vertical",
     mounted: false,
     layouts: { lg: this.props.initialLayout },
-    toolbox: { lg: [] }
+    toolbox: { lg: [initialToolbox] }
   };
 
   componentDidMount() {
@@ -136,33 +149,31 @@ class ShowcaseLayout extends React.Component {
   };
 
   onTakeItem = item => {
+    console.log("taking item...");
+    initialToolbox.i = uuid.v1();
     this.setState(prevState => ({
       toolbox: {
-        ...prevState.toolbox,
-        [prevState.currentBreakpoint]: prevState.toolbox[
-          prevState.currentBreakpoint
-        ].filter(({ i }) => i !== item.i)
+        lg: [initialToolbox]
+        // [prevState.currentBreakpoint]: prevState.toolbox[
+        //   prevState.currentBreakpoint
+        // ].filter(({ i }) => i !== item.i)
       },
       layouts: {
         ...prevState.layouts,
         [prevState.currentBreakpoint]: [
           ...prevState.layouts[prevState.currentBreakpoint],
-          item
+          {
+            ...item
+          }
         ]
       }
     }));
   };
 
   onPutItem = item => {
+    console.log("Putting item", item);
     this.setState(prevState => {
       return {
-        toolbox: {
-          ...prevState.toolbox,
-          [prevState.currentBreakpoint]: [
-            ...(prevState.toolbox[prevState.currentBreakpoint] || []),
-            item
-          ]
-        },
         layouts: {
           ...prevState.layouts,
           [prevState.currentBreakpoint]: prevState.layouts[
@@ -175,6 +186,7 @@ class ShowcaseLayout extends React.Component {
 
   onLayoutChange = (layout, layouts) => {
     this.props.onLayoutChange(layout, layouts);
+    console.log("layout changed");
     this.setState({ layouts });
   };
 
@@ -185,9 +197,9 @@ class ShowcaseLayout extends React.Component {
   };
 
   checkBounds(e: Event, data: DraggableData) {
-    let x = data.node.getBoundingClientRect().left;
-    let y = data.node.getBoundingClientRect().top;
-    let box = ReactDOM.findDOMNode(this.refs.grid).getBoundingClientRect();
+    const x = data.node.getBoundingClientRect().left;
+    const y = data.node.getBoundingClientRect().top;
+    const box = ReactDOM.findDOMNode(this.refs.grid).getBoundingClientRect();
 
     return (
       box.left < x &&
@@ -199,25 +211,14 @@ class ShowcaseLayout extends React.Component {
 
   onDragInItem(e: Event, data: DraggableData, item) {
     item.continueDrag = e;
+    console.log("dragin item");
     this.onTakeItem(item);
   }
 
   render() {
+    console.log("test", this.state.toolbox);
     return (
-      <div>
-        <div>
-          Current Breakpoint: {this.state.currentBreakpoint} (
-          {this.props.cols[this.state.currentBreakpoint]} columns)
-        </div>
-        <div>
-          Compaction type:{" "}
-          {_.capitalize(this.state.compactType) || "No Compaction"}
-        </div>
-        <button onClick={this.onNewLayout}>Generate New Layout</button>
-        <button onClick={this.onCompactTypeChange}>
-          Change Compaction Type
-        </button>
-
+      <div className="container">
         <ToolBox
           items={this.state.toolbox[this.state.currentBreakpoint] || []}
           onTakeItem={this.onTakeItem}
