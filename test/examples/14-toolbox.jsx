@@ -36,7 +36,7 @@ class ToolBoxItem extends React.Component {
       <Draggable
         onDrag={this.handleDrag.bind(this)}
         position={{ x: 0, y: 0 }}
-        bounds="div.container"
+        bounds="body"
       >
         <div
           className="toolbox__items__item"
@@ -74,7 +74,7 @@ const initialToolbox = {
   h: 4,
   x: 2,
   y: 0,
-  i: "placeholder",
+  i: "test",
   moved: false,
   static: false,
   isDraggable: undefined,

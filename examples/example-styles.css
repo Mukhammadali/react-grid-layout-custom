@@ -64,7 +64,7 @@ li b {
 .toolbox {
   background-color: #dfd;
   width: 100%;
-  height: 120px;
+  height: 200px;
   overflow: scroll;
 }
 
@@ -89,8 +89,9 @@ li b {
   text-align: center;
   line-height: 40px;
   cursor: pointer;
-  width: 40px;
-  height: 40px;
+  width: 100px;
+  /* height: 40px; */
+  word-wrap: break-word;
   padding: 10px;
   margin: 5px;
   border: 1px solid black;
