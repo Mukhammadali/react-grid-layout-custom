@@ -1,72 +1,55 @@
 import React from "react";
 import uuid from "uuid";
+import styled from 'styled-components';
 import _ from "lodash";
 import { Responsive, WidthProvider } from "react-grid-layout";
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
-import Draggable, { DraggableData } from "react-draggable";
-import ReactDOM from "react-dom";
+import Draggable from "react-draggable";
 
-class ToolBoxItem extends React.Component {
-  state = {
-    dragging: false
-  };
-
-  handleClick(e: Event) {
-    if (!this.state.dragging) {
-      this.props.onTakeItem(this.props.item);
-    } else {
-      this.setState({ dragging: false });
+const ToolBoxItem = (props) => {
+  const handleDrag = (e, data) => {
+    console.log('e:', e)
+    console.log('data:', data)
+    console.log('calling onDragInItem outside');
+    const isTrue = props.checkBounds(e, data);
+    if (isTrue) {
+      console.log('calling onDragInItem');
+      props.onDragInItem(e, data, props.item);
     }
   }
 
-  handleDrag(e: Event, data: DraggableData) {
-    this.setState({
-      dragging: true
-    });
-    if (this.props.checkBounds(e, data)) {
-      this.props.onDragInItem(e, data, this.props.item);
-    }
-  }
-
-  render() {
     // Note: removing this Draggable element via onTakeItem sometimes causes react warning in debug mode
     // Not an actual leak per https://github.com/mzabriskie/react-draggable/issues/390
     // However this may be causing touch version to break
     return (
       <Draggable
-        onDrag={this.handleDrag.bind(this)}
+        onDrag={handleDrag}
         position={{ x: 0, y: 0 }}
-        bounds="body"
+        // bounds="window"
       >
-        <div
-          className="toolbox__items__item"
-          onClick={this.handleClick.bind(this)}
-        >
-          {this.props.item.i}
-        </div>
+        <ToolboxListItem>
+          {props.item.i}
+        </ToolboxListItem>
       </Draggable>
     );
-  }
 }
-class ToolBox extends React.Component {
-  render() {
+const ToolBox = (props) => {
     return (
-      <div className="toolbox">
+      <ToolBoxWrapper>
         <span className="toolbox__title">Toolbox</span>
-        <div className="toolbox__items">
-          {this.props.items.map(item => (
+        <ToolboxList>
+          {props.items.map(item => (
             <ToolBoxItem
               key={item.i}
               item={item}
-              checkBounds={this.props.checkBounds}
-              onDragInItem={this.props.onDragInItem}
-              onTakeItem={this.props.onTakeItem}
+              checkBounds={props.checkBounds}
+              onDragInItem={props.onDragInItem}
+              onTakeItem={props.onTakeItem}
             />
           ))}
-        </div>
-      </div>
+        </ToolboxList>
+      </ToolBoxWrapper>
     );
-  }
 }
 
 const initialToolbox = {
@@ -81,29 +64,40 @@ const initialToolbox = {
   isResizable: undefined
 };
 
-class ShowcaseLayout extends React.Component {
-  static defaultProps = {
-    className: "layout",
-    rowHeight: 30,
-    onLayoutChange: function() {},
-    cols: { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 },
-    initialLayout: []
-  };
+const gridLayoutConfig = {
+  cols: {
+    lg: 12,
+    md: 12,
+    sm: 12,
+    xs: 12,
+    xxs: 12
+  },
+  rows: 40,
+  gap: 10,
+  paddingContainer: [0, 0],
+  compactType: 'vertical'
+};
 
-  state = {
+
+const ShowcaseLayout = props => {
+  const [state, setState] = React.useState({
     currentBreakpoint: "lg",
     compactType: "vertical",
     mounted: false,
-    layouts: { lg: this.props.initialLayout },
+    layouts: { lg: props.initialLayout },
     toolbox: { lg: [initialToolbox] }
-  };
+  });
 
-  componentDidMount() {
-    this.setState({ mounted: true });
-  }
+  const gridRef = React.createRef();
 
-  generateDOM() {
-    return _.map(this.state.layouts[this.state.currentBreakpoint], l => {
+
+
+  React.useEffect(() => {
+    setState({...state, mounted: true });
+  }, [])
+
+  const generateDOM = () => {
+    return _.map(state.layouts[state.currentBreakpoint], l => {
       return (
         <div key={l.i} className={l.static ? "static" : ""}>
           {l.static ? (
@@ -121,64 +115,50 @@ class ShowcaseLayout extends React.Component {
     });
   }
 
-  onBreakpointChange = breakpoint => {
-    this.setState(prevState => ({
+  const onBreakpointChange = breakpoint => {
+   setState({
+      ...state,
       currentBreakpoint: breakpoint,
       toolbox: {
-        ...prevState.toolbox,
+        ...state.toolbox,
         [breakpoint]:
-          prevState.toolbox[breakpoint] ||
-          prevState.toolbox[prevState.currentBreakpoint] ||
+          state.toolbox[breakpoint] ||
+          state.toolbox[state.currentBreakpoint] ||
           []
       }
-    }));
+    });
   };
 
-  onCompactTypeChange = () => {
-    const { compactType: oldCompactType } = this.state;
-    const compactType =
-      oldCompactType === "horizontal"
-        ? "vertical"
-        : oldCompactType === "vertical"
-        ? null
-        : "horizontal";
-    this.setState({ compactType });
-  };
-
-  onTakeItem = item => {
+  const onTakeItem = item => {
+    console.log('onTakeItem', item)
     initialToolbox.i = uuid.v4();
-    this.setState(prevState => ({
-      toolbox: {
-        lg: [initialToolbox]
-      },
+    setState({
+      ...state,
       layouts: {
-        ...prevState.layouts,
-        [prevState.currentBreakpoint]: [
-          ...prevState.layouts[prevState.currentBreakpoint],
+        ...state.layouts,
+        [state.currentBreakpoint]: [
+          ...state.layouts[state.currentBreakpoint],
           {
             ...item
           }
         ]
       }
-    }));
-  };
-
-
-  onLayoutChange = (layout, layouts) => {
-    this.props.onLayoutChange(layout, layouts);
-    this.setState({ layouts });
-  };
-
-  onNewLayout = () => {
-    this.setState({
-      layouts: { lg: generateLayout() }
     });
   };
 
-  checkBounds(e: Event, data: DraggableData) {
+
+  const onLayoutChange = (layout, layouts) => {
+    setState({ ...state, layouts });
+  };
+
+
+  const checkBounds = (e, data) => {
     const x = data.node.getBoundingClientRect().left;
+    console.log('x:', x)
     const y = data.node.getBoundingClientRect().top;
-    const box = ReactDOM.findDOMNode(this.refs.grid).getBoundingClientRect();
+    console.log('y:', y)
+    const box = gridRef.current.getBoundingClientRect();
+    console.log('box:', box)
 
     return (
       box.left < x &&
@@ -188,58 +168,88 @@ class ShowcaseLayout extends React.Component {
     );
   }
 
-  onDragInItem(e: Event, data: DraggableData, item) {
-    item.continueDrag = e;
-    this.onTakeItem(item);
+  const onDragInItem = (e, data, item) => {
+    onTakeItem({ ...item, continueDrag: event })
   }
 
-  render() {
     return (
-      <div className="container">
+      <div className="container" style={{ display: 'flex' }}>
+        <div style={{ width: '80%' }} ref={gridRef}>
+          <ResponsiveReactGridLayout
+            {...props}
+            style={{
+              minHeight: '800px',
+            }}
+            layouts={state.layouts}
+            onBreakpointChange={onBreakpointChange}
+            onLayoutChange={onLayoutChange}
+            rowHeight={gridLayoutConfig.rows}
+            cols={gridLayoutConfig.cols}
+            containerPadding={gridLayoutConfig.paddingContainer}
+            compactType={gridLayoutConfig.compactType}
+            // preventCollision={gridLayoutConfig.compactType}
+            // WidthProvider option
+            measureBeforeMount={false}
+            // I like to have it animate on mount. If you don't, delete `useCSSTransforms` (it's default `true`)
+            // and set `measureBeforeMount={true}`.
+            useCSSTransforms={state.mounted}
+          >
+            {generateDOM()}
+          </ResponsiveReactGridLayout>
+        </div>
         <ToolBox
-          items={this.state.toolbox[this.state.currentBreakpoint] || []}
-          onTakeItem={this.onTakeItem}
-          checkBounds={this.checkBounds.bind(this)}
-          onDragInItem={this.onDragInItem.bind(this)}
+          items={state.toolbox[state.currentBreakpoint] || []}
+          onTakeItem={onTakeItem}
+          checkBounds={checkBounds}
+          onDragInItem={onDragInItem}
         />
-
-        <ResponsiveReactGridLayout
-          {...this.props}
-          layouts={this.state.layouts}
-          onBreakpointChange={this.onBreakpointChange}
-          onLayoutChange={this.onLayoutChange}
-          // WidthProvider option
-          measureBeforeMount={false}
-          // I like to have it animate on mount. If you don't, delete `useCSSTransforms` (it's default `true`)
-          // and set `measureBeforeMount={true}`.
-          useCSSTransforms={this.state.mounted}
-          compactType={this.state.compactType}
-          preventCollision={!this.state.compactType}
-          ref="grid"
-        >
-          {this.generateDOM()}
-        </ResponsiveReactGridLayout>
       </div>
     );
-  }
 }
+ShowcaseLayout.defaultProps = {
+  className: "layout",
+  rowHeight: 30,
+  onLayoutChange: function() {},
+  cols: { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 },
+  initialLayout: []
+};
 
 module.exports = ShowcaseLayout;
-
-function generateLayout() {
-  return _.map(_.range(0, 25), function(item, i) {
-    var y = Math.ceil(Math.random() * 4) + 1;
-    return {
-      x: (_.random(0, 5) * 2) % 12,
-      y: Math.floor(i / 6) * y,
-      w: 2,
-      h: y,
-      i: i.toString(),
-      static: Math.random() < 0.05
-    };
-  });
-}
 
 if (require.main === module) {
   require("../test-hook.jsx")(module.exports);
 }
+
+
+const ToolboxList = styled.div`
+  display: block;
+`;
+
+const ToolboxListItem = styled.div`
+  display: inline-block;
+  z-index: 2;
+  text-align: center;
+  line-height: 40px;
+  cursor: pointer;
+  max-width: 120px;
+  min-height: 60px;
+  min-width: 60px;
+  word-wrap: break-word;
+  padding: 10px;
+  margin: 5px;
+  border: 1px solid black;
+  background-color: #ddd;
+
+  .react-draggable-dragging {
+    position: absolute;
+  }
+`;
+
+const ToolBoxWrapper = styled.div`
+  background-color: #dfd;
+  width: 20%;
+  height: 100%;
+  position: relative;
+  /* max-width: 234px; */
+  margin-left: 20px;
+`;
